@@ -1,15 +1,19 @@
 use eframe::egui;
 use tray_item::{IconSource, TrayItem};
 
+mod settings;
+
 fn main() -> Result<(), eframe::Error> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+
+    let settings = settings::Settings::load_or_create("./settings.json");
 
     let mut tray = TrayItem::new("Tray Example", IconSource::Resource("")).unwrap();
 
     tray.add_label("Tray Label").unwrap();
 
-    tray.add_menu_item("Hello", || {
-        println!("Hello!");
+    tray.add_menu_item("Hello", move || {
+        println!("Hello {} the {}!", settings.name, settings.species);
     })
     .unwrap();
 
