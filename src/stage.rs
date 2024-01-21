@@ -1,34 +1,37 @@
-mod stage_frame;
 use crate::settings::Settings;
-use stage_frame::StageFrame;
+use gtk::prelude::*;
+use gtk::{gdk::Display, Application, ApplicationWindow, CssProvider};
 
 pub struct Stage {
-    name: String,
+    window: ApplicationWindow,
 }
 
 impl Stage {
-    pub fn new(settings: &Settings) -> Self {
+    pub fn init_application() -> () {
+        let provider = CssProvider::new();
+        provider.load_from_string("* { background: transparent; border: 2px solid green; }");
+
+        gtk::style_context_add_provider_for_display(
+            &Display::default().expect("Could not connect to a display."),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
+
+    pub fn new(app: &Application, settings: &Settings) -> Self {
         let name = &settings.name;
         let species = &settings.species;
 
         Self {
-            name: format!("{name} the {species}"),
+            window: ApplicationWindow::builder()
+                .application(app)
+                .title(format!("{name} the {species}"))
+                .decorated(false)
+                .build(),
         }
     }
 
-    pub fn show(&self) -> Result<(), eframe::Error> {
-        let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default()
-                .with_decorations(false)
-                .with_inner_size([320.0, 240.0])
-                .with_transparent(true),
-            ..Default::default()
-        };
-
-        eframe::run_native(
-            &self.name,
-            options,
-            Box::new(|_cc| Box::<StageFrame>::default()),
-        )
+    pub fn show(&self) -> () {
+        self.window.present();
     }
 }

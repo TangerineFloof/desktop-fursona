@@ -1,12 +1,23 @@
 mod settings;
 mod stage;
+use gtk::prelude::*;
+use gtk::{glib, Application};
 use stage::Stage;
 
-fn main() -> Result<(), eframe::Error> {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+fn main() -> glib::ExitCode {
+    let app = Application::builder()
+        .application_id("com.tangerinefloof.DesktopFursona")
+        .build();
+    app.connect_startup(handle_startup);
+    app.connect_activate(handle_activate);
+    app.run()
+}
 
+fn handle_startup(_: &Application) {
+    Stage::init_application();
+}
+
+fn handle_activate(app: &Application) {
     let settings = settings::Settings::load_or_create("./settings.json");
-
-    let stage = Stage::new(&settings);
-    stage.show()
+    Stage::new(app, &settings).show()
 }
