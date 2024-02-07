@@ -4,6 +4,7 @@ mod stage_builder;
 pub use stage_builder::StageBuilder;
 
 use self::gl_context_wrapper::GlContextWrapper;
+use crate::rendering::Renderer;
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::{Surface, SwapInterval, WindowSurface};
@@ -15,6 +16,7 @@ use winit::window::Window;
 pub struct Stage {
     gl_surface: Surface<WindowSurface>,
     gl_context: GlContextWrapper,
+    renderer: Renderer,
     window: winit::window::Window,
 }
 
@@ -34,9 +36,18 @@ impl Stage {
                 .unwrap()
         };
 
+        let mut gl_context = GlContextWrapper::new(gl_config, &gl_display, raw_window_handle);
+        let renderer = {
+            // We need our new context to be current in order to set up the
+            // programs
+            let _current = gl_context.make_current(&gl_surface);
+            Renderer::new(&gl_display)
+        };
+
         Ok(Self {
-            gl_context: GlContextWrapper::new(gl_config, &gl_display, raw_window_handle),
+            gl_context,
             gl_surface,
+            renderer,
             window,
         })
     }
@@ -52,7 +63,7 @@ impl Stage {
             eprintln!("Error setting vsync: {res:?}");
         }
 
-        // self.renderer.draw();
+        self.renderer.draw();
         self.window.request_redraw();
 
         self.gl_surface.swap_buffers(&gl_context).unwrap();
@@ -71,6 +82,6 @@ impl Stage {
             NonZeroU32::new(width).unwrap(),
             NonZeroU32::new(height).unwrap(),
         );
-        // self.renderer.resize(width as i32, height as i32);
+        self.renderer.resize(width, height);
     }
 }

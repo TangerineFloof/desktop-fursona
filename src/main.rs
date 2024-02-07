@@ -1,3 +1,4 @@
+mod rendering;
 mod settings;
 mod stage;
 
