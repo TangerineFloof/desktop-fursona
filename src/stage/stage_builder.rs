@@ -2,7 +2,10 @@ use super::Stage;
 use crate::settings::Settings;
 use glutin::config::{ConfigTemplateBuilder, GlConfig};
 use glutin_winit::{self, DisplayBuilder};
-use winit::window::WindowBuilder;
+use winit::{
+    platform::macos::WindowExtMacOS,
+    window::{WindowBuilder, WindowLevel},
+};
 
 pub struct StageBuilder<'a> {
     event_loop: &'a winit::event_loop::EventLoop<()>,
@@ -29,12 +32,15 @@ impl<'a> StageBuilder<'a> {
         let window_builder = WindowBuilder::new()
             .with_transparent(true)
             .with_decorations(false)
+            .with_window_level(WindowLevel::AlwaysOnTop)
             .with_title(format!("{name} the {species}"));
 
         let window = match self.gl_config {
             Some(_) => window_builder.build(self.event_loop).unwrap(),
             None => self.init_opengl(window_builder).unwrap(),
         };
+
+        window.set_simple_fullscreen(true);
 
         Stage::new(window, self.gl_config.as_ref().unwrap())
     }
