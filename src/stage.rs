@@ -1,22 +1,20 @@
-mod gl_context_wrapper;
 mod stage_builder;
 
+use glium::Display;
+use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
 pub use stage_builder::StageBuilder;
 
-use self::gl_context_wrapper::GlContextWrapper;
 use crate::rendering::Renderer;
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
-use glutin::surface::{Surface, SwapInterval, WindowSurface};
+use glutin::surface::WindowSurface;
 use glutin_winit::GlWindow;
 use raw_window_handle::HasRawWindowHandle;
-use std::num::NonZeroU32;
 use winit::dpi::LogicalSize;
 use winit::window::{CursorIcon, Window};
 
 pub struct Stage {
-    gl_surface: Surface<WindowSurface>,
-    gl_context: GlContextWrapper,
+    display: Display<WindowSurface>,
     renderer: Renderer,
     window: winit::window::Window,
 }
@@ -76,17 +74,47 @@ impl Stage {
                 .unwrap()
         };
 
-        let mut gl_context = GlContextWrapper::new(gl_config, &gl_display, raw_window_handle);
-        let renderer = {
-            // We need our new context to be current in order to set up the
-            // programs
-            let _current = gl_context.make_current(&gl_surface);
-            Renderer::new(&gl_display)
+        // The context creation part. It can be created before surface and that's how
+        // it's expected in multithreaded + multiwindow operation mode, since you
+        // can send NotCurrentContext, but not Surface.
+        let context_attributes = ContextAttributesBuilder::new().build(raw_window_handle);
+
+        // Since glutin by default tries to create OpenGL core context, which may not be
+        // present we should try gles.
+        let fallback_context_attributes = ContextAttributesBuilder::new()
+            .with_context_api(ContextApi::Gles(None))
+            .build(raw_window_handle);
+
+        // There are also some old devices that support neither modern OpenGL nor GLES.
+        // To support these we can try and create a 2.1 context.
+        let legacy_context_attributes = ContextAttributesBuilder::new()
+            .with_context_api(ContextApi::OpenGl(Some(Version::new(2, 1))))
+            .build(raw_window_handle);
+
+        let not_current_gl_context = unsafe {
+            gl_display
+                .create_context(&gl_config, &context_attributes)
+                .unwrap_or_else(|_| {
+                    gl_display
+                        .create_context(&gl_config, &fallback_context_attributes)
+                        .unwrap_or_else(|_| {
+                            gl_display
+                                .create_context(&gl_config, &legacy_context_attributes)
+                                .expect("failed to create context")
+                        })
+                })
         };
 
-        Ok(Self {
-            gl_context,
+        let display = glium::Display::new(
+            not_current_gl_context.make_current(&gl_surface).unwrap(),
             gl_surface,
+        )
+        .unwrap();
+
+        let renderer = Renderer::new(&display);
+
+        Ok(Self {
+            display,
             renderer,
             window,
         })
@@ -120,35 +148,13 @@ impl Stage {
     }
 
     pub fn draw(&mut self) {
-        let gl_context = self.gl_context.make_current(&self.gl_surface);
-
-        // Try setting vsync.
-        if let Err(res) = self
-            .gl_surface
-            .set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()))
-        {
-            eprintln!("Error setting vsync: {res:?}");
-        }
-
-        self.renderer.draw();
+        let mut frame = self.display.draw();
+        self.renderer.draw(&mut frame);
         self.window.request_redraw();
-
-        self.gl_surface.swap_buffers(&gl_context).unwrap();
+        frame.finish().unwrap();
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
-        let gl_context = self.gl_context.make_current(&self.gl_surface);
-
-        // Some platforms like EGL require resizing GL surface to update the size
-        // Notable platforms here are Wayland and macOS, other don't require it
-        // and the function is no-op, but it's wise to resize it for portability
-        // reasons.
-
-        self.gl_surface.resize(
-            &gl_context,
-            NonZeroU32::new(width).unwrap(),
-            NonZeroU32::new(height).unwrap(),
-        );
-        self.renderer.resize(width, height);
+        self.display.resize((width, height));
     }
 }
