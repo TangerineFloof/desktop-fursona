@@ -3,6 +3,7 @@ mod settings;
 mod stage;
 
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
+use rendering::{Renderer, Renderer2D};
 use settings::Settings;
 use stage::StageBuilder;
 use winit::event::{Event, StartCause, WindowEvent};
@@ -16,6 +17,9 @@ fn main() -> Result<(), impl std::error::Error> {
 
     let settings = Settings::load_or_create("./settings.json");
     let mut stage = stage_builder.build(&settings).unwrap();
+
+    let jack = Box::new(Renderer2D::new(&stage, "./jack_by_nal_cinnamonspots.png"));
+    let renderers: Vec<Box<dyn Renderer>> = vec![jack];
 
     // Cheaply creates an empty DeviceState
     let device_state = DeviceState::checked_new().unwrap();
@@ -48,7 +52,7 @@ fn main() -> Result<(), impl std::error::Error> {
                     }
                 }
                 WindowEvent::RedrawRequested => {
-                    stage.draw();
+                    stage.draw(&renderers);
                 }
                 WindowEvent::CloseRequested => elwt.exit(),
                 _ => (),

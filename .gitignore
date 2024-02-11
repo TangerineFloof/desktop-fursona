@@ -11,3 +11,6 @@ target/
 
 # Runtime files
 /settings.json
+
+# Miscellaneous environment files
+.DS_Store

@@ -14,8 +14,7 @@ use winit::dpi::LogicalSize;
 use winit::window::{CursorIcon, Window};
 
 pub struct Stage {
-    display: Display<WindowSurface>,
-    renderer: Renderer,
+    pub display: Display<WindowSurface>,
     window: winit::window::Window,
 }
 
@@ -111,24 +110,23 @@ impl Stage {
         )
         .unwrap();
 
-        let renderer = Renderer::new(&display);
-
-        Ok(Self {
-            display,
-            renderer,
-            window,
-        })
+        Ok(Self { display, window })
     }
 
-    pub fn on_mouse_over(&self, x: u32, y: u32) {
+    pub fn convert_screen_point_to_renderer_coord(&self, point: (u32, u32)) -> (f32, f32) {
         let scale_factor = self.window.scale_factor();
         let size: LogicalSize<f32> = self.window.inner_size().to_logical(scale_factor);
         let half_width = (size.width as f32) / 2.0;
         let half_height = (size.height as f32) / 2.0;
 
-        // Convert to renderer coordinate system
-        let rx = (x as f32 - half_width) / half_width;
-        let ry = (half_height - y as f32) / half_height;
+        return (
+            (point.0 as f32 - half_width) / half_width,
+            (half_height - point.1 as f32) / half_height,
+        );
+    }
+
+    pub fn on_mouse_over(&self, x: u32, y: u32) {
+        let (rx, ry) = self.convert_screen_point_to_renderer_coord((x, y));
 
         let inside = is_point_in_triangle(
             Point(rx, ry),
@@ -147,9 +145,12 @@ impl Stage {
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, renderers: &Vec<Box<dyn Renderer>>) {
         let mut frame = self.display.draw();
-        self.renderer.draw(&mut frame);
+        for renderer in renderers {
+            renderer.draw(&mut frame);
+        }
+
         self.window.request_redraw();
         frame.finish().unwrap();
     }
