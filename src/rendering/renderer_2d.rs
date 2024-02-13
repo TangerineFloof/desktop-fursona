@@ -1,6 +1,6 @@
 use crate::stage::Stage;
 
-use super::Renderer;
+use super::{Renderer, RendererCoord};
 use glium::index::{NoIndices, PrimitiveType};
 use glium::texture::CompressedTexture2d;
 use glium::{implement_vertex, uniform, Frame, Program, Surface, VertexBuffer};
@@ -51,9 +51,15 @@ impl Renderer2D {
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
 
         // Vertices will be anchored to top-left and spaced out with a 1x scale of the texture's dimensions
-        let (left, top) = stage.convert_screen_point_to_renderer_coord((0, 25));
-        let (right, bottom) = stage
-            .convert_screen_point_to_renderer_coord((image_dimensions.0, image_dimensions.1 + 25));
+        let RendererCoord { x: left, y: top } = stage
+            .viewport
+            .convert_point_to_renderer_coord(stage.viewport.top_left());
+        let RendererCoord {
+            x: right,
+            y: bottom,
+        } = stage
+            .viewport
+            .convert_point_to_renderer_coord(stage.viewport.top_left() + image_dimensions);
 
         let vertex_buffer = VertexBuffer::new(
             &stage.display,

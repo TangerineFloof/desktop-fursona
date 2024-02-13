@@ -1,21 +1,27 @@
 mod stage_builder;
+mod viewport;
+mod viewport_point;
 
 use glium::Display;
 use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
 pub use stage_builder::StageBuilder;
 
-use crate::rendering::Renderer;
+use crate::rendering::{Renderer, RendererCoord};
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::WindowSurface;
 use glutin_winit::GlWindow;
 use raw_window_handle::HasRawWindowHandle;
-use winit::dpi::LogicalSize;
+use std::rc::Rc;
 use winit::window::{CursorIcon, Window};
+
+use viewport::Viewport;
+pub use viewport_point::ViewportPoint;
 
 pub struct Stage {
     pub display: Display<WindowSurface>,
-    window: winit::window::Window,
+    pub viewport: Viewport,
+    window: Rc<Window>,
 }
 
 struct Point(f32, f32);
@@ -110,23 +116,19 @@ impl Stage {
         )
         .unwrap();
 
-        Ok(Self { display, window })
-    }
+        let window = Rc::new(window);
 
-    pub fn convert_screen_point_to_renderer_coord(&self, point: (u32, u32)) -> (f32, f32) {
-        let scale_factor = self.window.scale_factor();
-        let size: LogicalSize<f32> = self.window.inner_size().to_logical(scale_factor);
-        let half_width = (size.width as f32) / 2.0;
-        let half_height = (size.height as f32) / 2.0;
-
-        return (
-            (point.0 as f32 - half_width) / half_width,
-            (half_height - point.1 as f32) / half_height,
-        );
+        Ok(Self {
+            display,
+            viewport: Viewport::new(window.clone()),
+            window,
+        })
     }
 
     pub fn on_mouse_over(&self, x: u32, y: u32) {
-        let (rx, ry) = self.convert_screen_point_to_renderer_coord((x, y));
+        let RendererCoord { x: rx, y: ry } = self
+            .viewport
+            .convert_point_to_renderer_coord(ViewportPoint { x, y });
 
         let inside = is_point_in_triangle(
             Point(rx, ry),

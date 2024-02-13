@@ -18,8 +18,7 @@ fn main() -> Result<(), impl std::error::Error> {
     let settings = Settings::load_or_create("./settings.json");
     let mut stage = stage_builder.build(&settings).unwrap();
 
-    let jack = Box::new(Renderer2D::new(&stage, "./jack_by_nal_cinnamonspots.png"));
-    let renderers: Vec<Box<dyn Renderer>> = vec![jack];
+    let mut renderers: Vec<Box<dyn Renderer>> = Vec::new();
 
     // Cheaply creates an empty DeviceState
     let device_state = DeviceState::checked_new().unwrap();
@@ -44,6 +43,10 @@ fn main() -> Result<(), impl std::error::Error> {
 
                     prev_mouse_state = mouse_state;
                 }
+            }
+            Event::Resumed => {
+                let jack = Box::new(Renderer2D::new(&stage, "./jack_by_nal_cinnamonspots.png"));
+                renderers.push(jack);
             }
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(size) => {
