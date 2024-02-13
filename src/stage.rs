@@ -1,19 +1,21 @@
-mod stage_builder;
 mod viewport;
 mod viewport_point;
 
 use glium::Display;
+use glutin::config::{Config, ConfigTemplateBuilder};
 use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
-pub use stage_builder::StageBuilder;
 
 use crate::rendering::{Renderer, RendererCoord};
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::WindowSurface;
-use glutin_winit::GlWindow;
+use glutin_winit::{DisplayBuilder, GlWindow};
 use raw_window_handle::HasRawWindowHandle;
 use std::rc::Rc;
-use winit::window::{CursorIcon, Window};
+use winit::event_loop::EventLoop;
+#[cfg(target_os = "macos")]
+use winit::platform::macos::WindowExtMacOS;
+use winit::window::{CursorIcon, Window, WindowBuilder, WindowLevel};
 
 use viewport::Viewport;
 pub use viewport_point::ViewportPoint;
@@ -63,8 +65,63 @@ fn is_point_in_triangle(point: Point, triangle: (Point, Point, Point)) -> bool {
     ((side_1 < 0.0) == (side_2 < 0.0)) == (side_3 < 0.0)
 }
 
+fn init_opengl(event_loop: &EventLoop<()>, window_builder: WindowBuilder) -> (Window, Config) {
+    // The template will match only the configurations supporting rendering
+    // to windows.
+    //
+    // XXX We force transparency only on macOS, given that EGL on X11 doesn't
+    // have it, but we still want to show window. The macOS situation is like
+    // that, because we can query only one config at a time on it, but all
+    // normal platforms will return multiple configs, so we can find the config
+    // with transparency ourselves inside the `reduce`.
+    let template = ConfigTemplateBuilder::new()
+        .with_alpha_size(8)
+        .with_transparency(true);
+
+    let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
+
+    let (window, gl_config) = display_builder
+        .build(event_loop, template, |configs| {
+            // Find the config with the maximum number of samples, so our triangle will
+            // be smooth.
+            configs
+                .reduce(|accum, config| {
+                    let transparency_check = config.supports_transparency().unwrap_or(false)
+                        & !accum.supports_transparency().unwrap_or(false);
+
+                    if transparency_check || config.num_samples() > accum.num_samples() {
+                        config
+                    } else {
+                        accum
+                    }
+                })
+                .unwrap()
+        })
+        .unwrap();
+
+    println!("Picked a config with {} samples", gl_config.num_samples());
+
+    if let Some(trans) = gl_config.supports_transparency() {
+        println!("picked transparent? {}", trans);
+    } else {
+        println!("oh no...");
+    }
+
+    (window.unwrap(), gl_config)
+}
+
 impl Stage {
-    pub fn new(window: Window, gl_config: &glutin::config::Config) -> Result<Stage, &'static str> {
+    pub fn new(event_loop: &EventLoop<()>) -> Result<Stage, &'static str> {
+        let window_builder = WindowBuilder::new()
+            .with_transparent(true)
+            .with_decorations(false)
+            .with_window_level(WindowLevel::AlwaysOnTop);
+
+        let (window, gl_config) = init_opengl(event_loop, window_builder);
+
+        #[cfg(target_os = "macos")]
+        window.set_simple_fullscreen(true);
+
         let raw_window_handle = Some(window.raw_window_handle());
 
         // XXX The display could be obtained from any object created by it, so we can

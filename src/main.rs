@@ -5,7 +5,7 @@ mod stage;
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 use rendering::{Renderer, Renderer2D};
 use settings::Settings;
-use stage::StageBuilder;
+use stage::Stage;
 use winit::event::{Event, StartCause, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -13,10 +13,10 @@ fn main() -> Result<(), impl std::error::Error> {
     let event_loop = EventLoop::new().unwrap();
     event_loop.set_control_flow(ControlFlow::Poll);
 
-    let mut stage_builder = StageBuilder::new(&event_loop);
-
     let settings = Settings::load_or_create("./settings.json");
-    let mut stage = stage_builder.build(&settings).unwrap();
+    println!("Loading {} the {}...", settings.name, settings.species);
+
+    let mut stage = Stage::new(&event_loop).unwrap();
 
     let mut renderers: Vec<Box<dyn Renderer>> = Vec::new();
 
