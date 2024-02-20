@@ -51,15 +51,14 @@ impl Renderer2D {
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
 
         // Vertices will be anchored to top-left and spaced out with a 1x scale of the texture's dimensions
-        let RendererCoord { x: left, y: top } = stage
-            .viewport
-            .convert_point_to_renderer_coord(&stage.viewport.top_left());
+        let left = 0.0f32;
+        let top = 0.0f32;
         let RendererCoord {
             x: right,
             y: bottom,
         } = stage
             .viewport
-            .convert_point_to_renderer_coord(&(stage.viewport.top_left() + image_dimensions));
+            .convert_point_to_renderer_coord(&(stage.viewport.center() + image_dimensions));
 
         let vertex_buffer = VertexBuffer::new(
             &stage.display,
@@ -118,9 +117,7 @@ impl Renderer2D {
 }
 
 impl Renderer for Renderer2D {
-    fn draw(&self, frame: &mut Frame) -> () {
-        let x = 0.0;
-
+    fn draw(&self, frame: &mut Frame, position: RendererCoord) -> () {
         frame
             .draw(
                 &self.vertex_buffer,
@@ -131,7 +128,7 @@ impl Renderer for Renderer2D {
                         [1.0, 0.0, 0.0, 0.0],
                         [0.0, 1.0, 0.0, 0.0],
                         [0.0, 0.0, 1.0, 0.0],
-                        [ x , 0.0, 0.0, 1.0f32],
+                        [ position.x , position.y, 0.0, 1.0f32],
                     ],
                     tex: &self.texture,
                 },

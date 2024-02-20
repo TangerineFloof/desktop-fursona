@@ -7,5 +7,5 @@ pub use renderer_2d::Renderer2D;
 pub use renderer_coord::RendererCoord;
 
 pub trait Renderer {
-    fn draw(&self, frame: &mut Frame) -> ();
+    fn draw(&self, frame: &mut Frame, position: RendererCoord) -> ();
 }

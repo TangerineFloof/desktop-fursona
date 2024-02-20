@@ -47,4 +47,15 @@ impl Viewport {
             y: get_menu_bar_height() as u32,
         }
     }
+
+    pub fn center(&self) -> ViewportPoint {
+        let scale_factor = self.window.scale_factor();
+        let size: LogicalSize<f64> = self.window.inner_size().to_logical(scale_factor);
+        let menu_bar_height = get_menu_bar_height();
+
+        ViewportPoint {
+            x: (size.width / 2.0) as u32,
+            y: (((size.height - menu_bar_height) / 2.0) + menu_bar_height) as u32,
+        }
+    }
 }

@@ -5,7 +5,8 @@ use glium::Display;
 use glutin::config::{Config, ConfigTemplateBuilder};
 use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
 
-use crate::rendering::{Renderer, RendererCoord};
+use crate::fursona::FursonaInstance;
+use crate::rendering::RendererCoord;
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::WindowSurface;
@@ -204,10 +205,14 @@ impl Stage {
         }
     }
 
-    pub fn draw(&mut self, renderers: &Vec<Box<dyn Renderer>>) {
+    pub fn draw<'a, I: Iterator<Item = &'a FursonaInstance>>(&mut self, instances: I) {
         let mut frame = self.display.draw();
-        for renderer in renderers {
-            renderer.draw(&mut frame);
+        for instance in instances {
+            instance.renderer.draw(
+                &mut frame,
+                self.viewport
+                    .convert_point_to_renderer_coord(&instance.position),
+            );
         }
 
         self.window.request_redraw();

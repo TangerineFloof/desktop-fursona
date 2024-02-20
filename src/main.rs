@@ -3,8 +3,10 @@ mod rendering;
 mod settings;
 mod stage;
 
+use std::cell::RefCell;
+
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
-use rendering::{Renderer, Renderer2D};
+use fursona::FursonaInstance;
 use settings::Settings;
 use stage::Stage;
 use winit::event::{Event, StartCause, WindowEvent};
@@ -20,9 +22,11 @@ fn main() -> Result<(), impl std::error::Error> {
         println!("  - {}", fursona.name)
     }
 
+    let settings = RefCell::new(Settings::load_or_create("./settings.json"));
+
     let mut stage = Stage::new(&event_loop).unwrap();
 
-    let mut renderers: Vec<Box<dyn Renderer>> = Vec::new();
+    let mut instances: Vec<FursonaInstance> = Vec::new();
 
     // Cheaply creates an empty DeviceState
     let device_state = DeviceState::checked_new().unwrap();
@@ -47,8 +51,13 @@ fn main() -> Result<(), impl std::error::Error> {
             }
         }
         Event::Resumed => {
-            let jack = Box::new(Renderer2D::new(&stage, "./jack_by_nal_cinnamonspots.png"));
-            renderers.push(jack);
+            instances.extend(
+                settings
+                    .borrow()
+                    .fursona
+                    .iter()
+                    .map(|fursona| fursona.make_instance(&stage)),
+            );
         }
         Event::WindowEvent { event, .. } => match event {
             WindowEvent::Resized(size) => {
@@ -57,7 +66,7 @@ fn main() -> Result<(), impl std::error::Error> {
                 }
             }
             WindowEvent::RedrawRequested => {
-                stage.draw(&renderers);
+                stage.draw(instances.iter());
             }
             WindowEvent::CloseRequested => elwt.exit(),
             _ => (),
