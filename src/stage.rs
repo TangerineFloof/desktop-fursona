@@ -18,7 +18,7 @@ use winit::event_loop::EventLoop;
 use winit::platform::macos::WindowExtMacOS;
 use winit::window::{CursorIcon, Window, WindowBuilder, WindowLevel};
 
-use viewport::Viewport;
+pub use viewport::Viewport;
 pub use viewport_point::ViewportPoint;
 
 pub struct Stage {
@@ -210,8 +210,10 @@ impl Stage {
         for instance in instances {
             instance.renderer.draw(
                 &mut frame,
+                &self.viewport,
                 self.viewport
                     .convert_point_to_renderer_coord(&instance.position),
+                instance.scale,
             );
         }
 

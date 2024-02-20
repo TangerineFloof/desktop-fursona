@@ -25,6 +25,16 @@ impl Viewport {
             y: (half_height - point.y as f32) / half_height,
         }
     }
+
+    // TODO: This size should return the full size of the window -- the renderer needs to
+    // know where 1.0 and -1.0 are, even if they're out of the viewport. How do I want to
+    // express that?? That's antithetical to the whole idea of this class.
+    pub fn size(&self) -> (u32, u32) {
+        let scale_factor = self.window.scale_factor();
+        let size: LogicalSize<u32> = self.window.inner_size().to_logical(scale_factor);
+
+        (size.width, size.height)
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -45,17 +55,6 @@ impl Viewport {
         ViewportPoint {
             x: 0,
             y: get_menu_bar_height() as u32,
-        }
-    }
-
-    pub fn center(&self) -> ViewportPoint {
-        let scale_factor = self.window.scale_factor();
-        let size: LogicalSize<f64> = self.window.inner_size().to_logical(scale_factor);
-        let menu_bar_height = get_menu_bar_height();
-
-        ViewportPoint {
-            x: (size.width / 2.0) as u32,
-            y: (((size.height - menu_bar_height) / 2.0) + menu_bar_height) as u32,
         }
     }
 }

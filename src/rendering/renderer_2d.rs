@@ -1,4 +1,4 @@
-use crate::stage::Stage;
+use crate::stage::{Stage, Viewport};
 
 use super::{Renderer, RendererCoord};
 use glium::index::{NoIndices, PrimitiveType};
@@ -50,15 +50,10 @@ impl Renderer2D {
         let image =
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
 
-        // Vertices will be anchored to top-left and spaced out with a 1x scale of the texture's dimensions
         let left = 0.0f32;
         let top = 0.0f32;
-        let RendererCoord {
-            x: right,
-            y: bottom,
-        } = stage
-            .viewport
-            .convert_point_to_renderer_coord(&(stage.viewport.center() + image_dimensions));
+        let right = 1.0f32;
+        let bottom = -1.0f32;
 
         let vertex_buffer = VertexBuffer::new(
             &stage.display,
@@ -114,10 +109,32 @@ impl Renderer2D {
             texture: CompressedTexture2d::new(&stage.display, image).unwrap(),
         }
     }
+
+    fn calc_scale(&self, viewport: &Viewport) -> (f32, f32) {
+        let (viewport_width, viewport_height) = viewport.size();
+        let half_viewport_width = (viewport_width as f32) / 2.0;
+        let half_viewport_height = (viewport_height as f32) / 2.0;
+
+        let (native_texture_width, native_texture_height) = self.texture.dimensions();
+        (
+            (native_texture_width as f32) / half_viewport_width,
+            (native_texture_height as f32) / half_viewport_height,
+        )
+    }
 }
 
 impl Renderer for Renderer2D {
-    fn draw(&self, frame: &mut Frame, position: RendererCoord) -> () {
+    fn draw(
+        &self,
+        frame: &mut Frame,
+        viewport: &Viewport,
+        position: RendererCoord,
+        scale: (f32, f32),
+    ) -> () {
+        let (base_scale_x, base_scale_y) = self.calc_scale(viewport);
+        let scale_x = base_scale_x * scale.0;
+        let scale_y = base_scale_y * scale.1;
+
         frame
             .draw(
                 &self.vertex_buffer,
@@ -125,9 +142,9 @@ impl Renderer for Renderer2D {
                 &self.program,
                 &uniform! {
                     matrix: [
-                        [1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
+                        [     scale_x,        0.0, 0.0, 0.0],
+                        [         0.0,    scale_y, 0.0, 0.0],
+                        [         0.0,        0.0, 1.0, 0.0],
                         [ position.x , position.y, 0.0, 1.0f32],
                     ],
                     tex: &self.texture,
