@@ -1,3 +1,4 @@
+mod fursona;
 mod rendering;
 mod settings;
 mod stage;
@@ -14,7 +15,10 @@ fn main() -> Result<(), impl std::error::Error> {
     event_loop.set_control_flow(ControlFlow::Poll);
 
     let settings = Settings::load_or_create("./settings.json");
-    println!("Loading {} the {}...", settings.name, settings.species);
+    println!("Defined fursona:");
+    for fursona in settings.fursona {
+        println!("  - {}", fursona.name)
+    }
 
     let mut stage = Stage::new(&event_loop).unwrap();
 

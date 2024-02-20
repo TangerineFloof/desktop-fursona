@@ -1,17 +1,20 @@
+use crate::fursona::Fursona;
 use std::path::Path;
 
 mod settings_file;
 
 pub struct Settings {
-    pub name: String,
-    pub species: String,
+    pub fursona: Vec<Fursona>,
 }
 
 impl Settings {
     fn from_settings_file(file: settings_file::SettingsFile) -> Self {
         Self {
-            name: file.name,
-            species: file.species,
+            fursona: file
+                .fursona
+                .into_iter()
+                .map(|fursona| fursona.to_runtime())
+                .collect(),
         }
     }
 

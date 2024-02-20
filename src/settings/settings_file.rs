@@ -1,9 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+use crate::fursona::Fursona;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SettingsFileMeta {
     pub version: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SettingsFileFursona {
+    pub name: String,
 }
 
 // Structure for the JSON representation of settings.
@@ -13,16 +20,16 @@ pub struct SettingsFileMeta {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SettingsFile {
     pub meta: SettingsFileMeta,
-    pub name: String,
-    pub species: String,
+    pub fursona: Vec<SettingsFileFursona>,
 }
 
 impl SettingsFile {
     pub fn new() -> Self {
         Self {
             meta: SettingsFileMeta::latest(),
-            name: "Jack".to_owned(),
-            species: "Wolf".to_owned(),
+            fursona: vec![SettingsFileFursona {
+                name: "Jack".to_owned(),
+            }],
         }
     }
 
@@ -63,5 +70,11 @@ impl SettingsFile {
 impl SettingsFileMeta {
     fn latest() -> Self {
         Self { version: 1 }
+    }
+}
+
+impl SettingsFileFursona {
+    pub fn to_runtime(self) -> Fursona {
+        Fursona { name: self.name }
     }
 }
