@@ -53,13 +53,13 @@ impl Renderer2D {
         // Vertices will be anchored to top-left and spaced out with a 1x scale of the texture's dimensions
         let RendererCoord { x: left, y: top } = stage
             .viewport
-            .convert_point_to_renderer_coord(stage.viewport.top_left());
+            .convert_point_to_renderer_coord(&stage.viewport.top_left());
         let RendererCoord {
             x: right,
             y: bottom,
         } = stage
             .viewport
-            .convert_point_to_renderer_coord(stage.viewport.top_left() + image_dimensions);
+            .convert_point_to_renderer_coord(&(stage.viewport.top_left() + image_dimensions));
 
         let vertex_buffer = VertexBuffer::new(
             &stage.display,
