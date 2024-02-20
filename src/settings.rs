@@ -3,17 +3,21 @@ use std::path::Path;
 
 mod settings_file;
 
+use settings_file::{CurrentSettingsFile, LoadSettingsResult};
+
 pub struct Settings {
     pub fursona: Vec<Fursona>,
 }
 
 impl Settings {
-    fn from_settings_file(file: settings_file::SettingsFile) -> Self {
+    fn from_settings_file(file: &CurrentSettingsFile) -> Self {
         Self {
             fursona: file
                 .fursona
-                .into_iter()
-                .map(|fursona| fursona.to_runtime())
+                .iter()
+                .map(|fursona| Fursona {
+                    name: fursona.name.to_owned(),
+                })
                 .collect(),
         }
     }
@@ -22,12 +26,21 @@ impl Settings {
         // Attempt to load the file if it already exists
         if Path::new(filename).exists() {
             println!("Attempting to load {filename}");
-            match settings_file::SettingsFile::load(filename) {
-                Ok(file) => {
+            match CurrentSettingsFile::load(filename) {
+                LoadSettingsResult::Success { file, did_migrate } => {
                     println!("Successfully loaded settings file");
-                    return Settings::from_settings_file(file);
+                    let parsed = Settings::from_settings_file(&file);
+
+                    if did_migrate {
+                        println!("Saving settings file to migrate to latest version");
+                        if let Err(msg) = file.save(filename) {
+                            println!("Error saving migrated file: {msg}");
+                        }
+                    }
+
+                    return parsed;
                 }
-                Err(e) => {
+                LoadSettingsResult::Error(e) => {
                     println!("Load of file {filename} failed: {e}");
                 }
             }
@@ -36,15 +49,16 @@ impl Settings {
         }
 
         // The file didn't load, so we'll create a new file from scratch
-        let created = settings_file::SettingsFile::new();
+        let created_file = CurrentSettingsFile::new();
+        let created = Settings::from_settings_file(&created_file);
 
         // Let's serialize this file to the filesystem
         println!("Saving new settings file to {filename}");
-        if let Err(msg) = created.save(filename) {
+        if let Err(msg) = created_file.save(filename) {
             println!("Error saving new file: {msg}");
         }
 
         // Return this newly created file
-        Settings::from_settings_file(created)
+        created
     }
 }
