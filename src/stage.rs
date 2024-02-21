@@ -208,7 +208,7 @@ impl Stage {
     pub fn draw<'a, I: Iterator<Item = &'a FursonaInstance>>(&mut self, instances: I) {
         let mut frame = self.display.draw();
         for instance in instances {
-            instance.renderer.draw(
+            instance.renderer().draw(
                 &mut frame,
                 &self.viewport,
                 self.viewport

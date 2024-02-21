@@ -2,6 +2,7 @@ mod fursona;
 mod rendering;
 mod settings;
 mod stage;
+mod time;
 
 use std::cell::RefCell;
 
@@ -9,6 +10,7 @@ use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 use fursona::FursonaInstance;
 use settings::Settings;
 use stage::Stage;
+use time::Time;
 use winit::event::{Event, StartCause, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -31,6 +33,8 @@ fn main() -> Result<(), impl std::error::Error> {
     // Cheaply creates an empty DeviceState
     let device_state = DeviceState::checked_new().unwrap();
     let mut prev_mouse_state = MouseState::default();
+
+    let mut time = Time::new();
 
     event_loop.run(move |event, elwt| match event {
         Event::NewEvents(StartCause::Poll) => {
@@ -66,6 +70,12 @@ fn main() -> Result<(), impl std::error::Error> {
                 }
             }
             WindowEvent::RedrawRequested => {
+                let delta_t_ms = time.delta_ms();
+
+                for instance in instances.iter_mut() {
+                    instance.update(delta_t_ms);
+                }
+
                 stage.draw(instances.iter());
             }
             WindowEvent::CloseRequested => elwt.exit(),

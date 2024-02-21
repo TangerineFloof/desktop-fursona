@@ -1,10 +1,12 @@
+use std::ops::Deref;
+use std::rc::Rc;
+
 use crate::stage::{Stage, Viewport};
 
 use super::{Renderer, RendererCoord};
 use glium::index::{NoIndices, PrimitiveType};
 use glium::texture::CompressedTexture2d;
 use glium::{implement_vertex, uniform, Frame, Program, Surface, VertexBuffer};
-use std::path::Path;
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -16,7 +18,7 @@ implement_vertex!(Vertex, position, tex_coords);
 pub struct Renderer2D {
     index_buffer: NoIndices,
     program: Program,
-    texture: CompressedTexture2d,
+    texture: Option<Rc<CompressedTexture2d>>,
     vertex_buffer: VertexBuffer<Vertex>,
 }
 
@@ -44,12 +46,7 @@ void main() {
 "#;
 
 impl Renderer2D {
-    pub fn new(stage: &Stage, filename: &str) -> Self {
-        let image = image::open(Path::new(filename)).unwrap().to_rgba8();
-        let image_dimensions = image.dimensions();
-        let image =
-            glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-
+    pub fn new(stage: &Stage) -> Self {
         let left = 0.0f32;
         let top = 0.0f32;
         let right = 1.0f32;
@@ -106,21 +103,25 @@ impl Renderer2D {
             vertex_buffer,
             index_buffer,
             program,
-            texture: CompressedTexture2d::new(&stage.display, image).unwrap(),
+            texture: None,
         }
     }
 
-    fn calc_scale(&self, viewport: &Viewport) -> (f32, f32) {
-        let (viewport_width, viewport_height) = viewport.size();
-        let half_viewport_width = (viewport_width as f32) / 2.0;
-        let half_viewport_height = (viewport_height as f32) / 2.0;
-
-        let (native_texture_width, native_texture_height) = self.texture.dimensions();
-        (
-            (native_texture_width as f32) / half_viewport_width,
-            (native_texture_height as f32) / half_viewport_height,
-        )
+    pub fn set_texture(&mut self, texture: Rc<CompressedTexture2d>) {
+        self.texture = Some(texture);
     }
+}
+
+fn calc_scale(texture: &Rc<CompressedTexture2d>, viewport: &Viewport) -> (f32, f32) {
+    let (viewport_width, viewport_height) = viewport.size();
+    let half_viewport_width = (viewport_width as f32) / 2.0;
+    let half_viewport_height = (viewport_height as f32) / 2.0;
+
+    let (native_texture_width, native_texture_height) = texture.dimensions();
+    (
+        (native_texture_width as f32) / half_viewport_width,
+        (native_texture_height as f32) / half_viewport_height,
+    )
 }
 
 impl Renderer for Renderer2D {
@@ -131,7 +132,9 @@ impl Renderer for Renderer2D {
         position: RendererCoord,
         scale: (f32, f32),
     ) -> () {
-        let (base_scale_x, base_scale_y) = self.calc_scale(viewport);
+        let texture = self.texture.as_ref().unwrap();
+
+        let (base_scale_x, base_scale_y) = calc_scale(texture, viewport);
         let scale_x = base_scale_x * scale.0;
         let scale_y = base_scale_y * scale.1;
 
@@ -147,7 +150,7 @@ impl Renderer for Renderer2D {
                         [         0.0,        0.0, 1.0, 0.0],
                         [ position.x , position.y, 0.0, 1.0f32],
                     ],
-                    tex: &self.texture,
+                    tex: texture.deref(),
                 },
                 &Default::default(),
             )
