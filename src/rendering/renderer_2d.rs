@@ -1,9 +1,9 @@
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::stage::{Stage, Viewport};
+use crate::stage::Stage;
 
-use super::{Renderer, RendererCoord};
+use super::{Renderer, RendererRect};
 use glium::index::{NoIndices, PrimitiveType};
 use glium::texture::CompressedTexture2d;
 use glium::{implement_vertex, uniform, Frame, Program, Surface, VertexBuffer};
@@ -112,31 +112,15 @@ impl Renderer2D {
     }
 }
 
-fn calc_scale(texture: &Rc<CompressedTexture2d>, viewport: &Viewport) -> (f32, f32) {
-    let (viewport_width, viewport_height) = viewport.size();
-    let half_viewport_width = (viewport_width as f32) / 2.0;
-    let half_viewport_height = (viewport_height as f32) / 2.0;
-
-    let (native_texture_width, native_texture_height) = texture.dimensions();
-    (
-        (native_texture_width as f32) / half_viewport_width,
-        (native_texture_height as f32) / half_viewport_height,
-    )
-}
-
 impl Renderer for Renderer2D {
-    fn draw(
-        &self,
-        frame: &mut Frame,
-        viewport: &Viewport,
-        position: RendererCoord,
-        scale: (f32, f32),
-    ) -> () {
+    fn draw(&self, frame: &mut Frame, rect: RendererRect) -> () {
         let texture = self.texture.as_ref().unwrap();
 
-        let (base_scale_x, base_scale_y) = calc_scale(texture, viewport);
-        let scale_x = base_scale_x * scale.0;
-        let scale_y = base_scale_y * scale.1;
+        // Multiply size by 2.0 because the vertices are sized to take up
+        // one quadrant of the renderer system, but the incoming rect size
+        // goes from 0.0 -> 1.0 for the whole coordinate system.
+        let scale_x = rect.width * 2.0;
+        let scale_y = rect.height * 2.0;
 
         frame
             .draw(
@@ -145,10 +129,10 @@ impl Renderer for Renderer2D {
                 &self.program,
                 &uniform! {
                     matrix: [
-                        [     scale_x,        0.0, 0.0, 0.0],
-                        [         0.0,    scale_y, 0.0, 0.0],
-                        [         0.0,        0.0, 1.0, 0.0],
-                        [ position.x , position.y, 0.0, 1.0f32],
+                        [ scale_x,     0.0, 0.0, 0.0],
+                        [     0.0, scale_y, 0.0, 0.0],
+                        [     0.0,     0.0, 1.0, 0.0],
+                        [  rect.x,  rect.y, 0.0, 1.0f32],
                     ],
                     tex: texture.deref(),
                 },

@@ -1,5 +1,6 @@
 mod viewport;
 mod viewport_point;
+mod viewport_rect;
 
 use glium::Display;
 use glutin::config::{Config, ConfigTemplateBuilder};
@@ -20,6 +21,7 @@ use winit::window::{CursorIcon, Window, WindowBuilder, WindowLevel};
 
 pub use viewport::Viewport;
 pub use viewport_point::ViewportPoint;
+pub use viewport_rect::ViewportRect;
 
 pub struct Stage {
     pub display: Display<WindowSurface>,
@@ -210,10 +212,7 @@ impl Stage {
         for instance in instances {
             instance.renderer().draw(
                 &mut frame,
-                &self.viewport,
-                self.viewport
-                    .convert_point_to_renderer_coord(&instance.position),
-                instance.scale,
+                self.viewport.convert_rect(instance.bounding_box()),
             );
         }
 

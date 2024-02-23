@@ -1,7 +1,7 @@
 use super::Fursona;
 use crate::{
     rendering::{Animation, Animation2D, Keyframe2D, Renderer, Renderer2D, TextureCache},
-    stage::{Stage, ViewportPoint},
+    stage::{Stage, ViewportPoint, ViewportRect},
 };
 
 enum FursonaInstanceRendering {
@@ -12,9 +12,8 @@ enum FursonaInstanceRendering {
 }
 
 pub struct FursonaInstance {
-    pub position: ViewportPoint,
+    position: ViewportPoint,
     rendering: FursonaInstanceRendering,
-    pub scale: (f32, f32),
 }
 
 impl FursonaInstance {
@@ -36,7 +35,21 @@ impl FursonaInstance {
                 ]),
                 renderer: Renderer2D::new(&stage),
             },
-            scale: (1.0, 1.0),
+        }
+    }
+
+    pub fn bounding_box(&self) -> ViewportRect {
+        let (intrinsic_width, intrinsic_height) = match &self.rendering {
+            FursonaInstanceRendering::TwoD { animation, .. } => {
+                animation.image_intrinsic_dimensions()
+            }
+        };
+
+        ViewportRect {
+            x: self.position.x,
+            y: self.position.y,
+            width: intrinsic_width,
+            height: intrinsic_height,
         }
     }
 

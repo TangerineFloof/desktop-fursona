@@ -1,5 +1,5 @@
-use super::viewport_point::ViewportPoint;
-use crate::rendering::RendererCoord;
+use super::{viewport_point::ViewportPoint, viewport_rect::ViewportRect};
+use crate::rendering::{RendererCoord, RendererRect};
 use std::rc::Rc;
 use winit::{dpi::LogicalSize, window::Window};
 
@@ -26,14 +26,18 @@ impl Viewport {
         }
     }
 
-    // TODO: This size should return the full size of the window -- the renderer needs to
-    // know where 1.0 and -1.0 are, even if they're out of the viewport. How do I want to
-    // express that?? That's antithetical to the whole idea of this class.
-    pub fn size(&self) -> (u32, u32) {
+    pub fn convert_rect(&self, rect: ViewportRect) -> RendererRect {
         let scale_factor = self.window.scale_factor();
-        let size: LogicalSize<u32> = self.window.inner_size().to_logical(scale_factor);
+        let size: LogicalSize<f32> = self.window.inner_size().to_logical(scale_factor);
+        let half_width = size.width / 2.0;
+        let half_height = size.height / 2.0;
 
-        (size.width, size.height)
+        RendererRect {
+            x: (rect.x as f32 - half_width) / half_width,
+            y: (half_height - rect.y as f32) / half_height,
+            width: (rect.width as f32) / size.width,
+            height: (rect.height as f32) / size.height,
+        }
     }
 }
 

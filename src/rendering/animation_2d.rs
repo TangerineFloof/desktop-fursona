@@ -34,6 +34,20 @@ impl Animation2D {
         }
     }
 
+    pub fn image_intrinsic_dimensions(&self) -> (u32, u32) {
+        let index = match self.state {
+            AnimationState::NotStarted => 0,
+            AnimationState::Active(current) => current.index,
+            AnimationState::Finished => self.keyframes.len() - 1,
+        };
+
+        if let Some(keyframe) = self.keyframes.get(index) {
+            return keyframe.image.dimensions();
+        }
+
+        (0, 0)
+    }
+
     fn get_fresh_frame(&self, index: usize) -> Option<CurrentFrame> {
         if let Some(keyframe) = self.keyframes.get(index) {
             Some(CurrentFrame {

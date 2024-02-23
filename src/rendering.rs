@@ -1,24 +1,27 @@
 mod animation_2d;
 mod renderer_2d;
-mod renderer_coord;
 mod texture_cache;
 
-use crate::stage::Viewport;
 use glium::Frame;
 
 pub use animation_2d::{Animation2D, Keyframe2D};
 pub use renderer_2d::Renderer2D;
-pub use renderer_coord::RendererCoord;
 pub use texture_cache::TextureCache;
 
+pub struct RendererCoord {
+    pub x: f32,
+    pub y: f32,
+}
+
+pub struct RendererRect {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
 pub trait Renderer {
-    fn draw(
-        &self,
-        frame: &mut Frame,
-        viewport: &Viewport,
-        position: RendererCoord,
-        scale: (f32, f32),
-    ) -> ();
+    fn draw(&self, frame: &mut Frame, rect: RendererRect) -> ();
 }
 
 pub trait Animation {
