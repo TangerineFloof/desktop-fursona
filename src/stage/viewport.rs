@@ -14,7 +14,7 @@ impl Viewport {
         Self { window }
     }
 
-    pub fn convert_point_to_renderer_coord(&self, point: &ViewportPoint) -> RendererCoord {
+    pub fn convert_point_to_renderer_coord(&self, point: ViewportPoint) -> RendererCoord {
         let scale_factor = self.window.scale_factor();
         let size: LogicalSize<f32> = self.window.inner_size().to_logical(scale_factor);
         let half_width = size.width / 2.0;
@@ -57,8 +57,8 @@ fn get_menu_bar_height() -> f64 {
 impl Viewport {
     pub fn top_left(&self) -> ViewportPoint {
         ViewportPoint {
-            x: 0,
-            y: get_menu_bar_height() as u32,
+            x: 0.0,
+            y: get_menu_bar_height() as f32,
         }
     }
 }

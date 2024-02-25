@@ -185,10 +185,8 @@ impl Stage {
         })
     }
 
-    pub fn on_mouse_over(&self, x: u32, y: u32) {
-        let RendererCoord { x: rx, y: ry } = self
-            .viewport
-            .convert_point_to_renderer_coord(&ViewportPoint { x, y });
+    pub fn on_mouse_over(&self, point: ViewportPoint) {
+        let RendererCoord { x: rx, y: ry } = self.viewport.convert_point_to_renderer_coord(point);
 
         let inside = is_point_in_triangle(
             Point(rx, ry),

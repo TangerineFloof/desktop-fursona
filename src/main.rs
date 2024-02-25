@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 use fursona::FursonaInstance;
 use settings::Settings;
-use stage::Stage;
+use stage::{Stage, ViewportPoint};
 use time::Time;
 use winit::event::{Event, StartCause, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -44,7 +44,10 @@ fn main() -> Result<(), impl std::error::Error> {
 
             let mouse_state = device_state.get_mouse();
             if mouse_state != prev_mouse_state {
-                stage.on_mouse_over(mouse_state.coords.0 as u32, mouse_state.coords.1 as u32);
+                stage.on_mouse_over(ViewportPoint {
+                    x: mouse_state.coords.0 as f32,
+                    y: mouse_state.coords.1 as f32,
+                });
 
                 let lmb = mouse_state.button_pressed.get(1).unwrap_or(&false);
                 if *lmb {
