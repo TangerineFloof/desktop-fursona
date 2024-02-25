@@ -1,3 +1,4 @@
+mod behaviors;
 mod fursona;
 mod rendering;
 mod settings;
@@ -76,7 +77,7 @@ fn main() -> Result<(), impl std::error::Error> {
                 let delta_t_ms = time.delta_ms();
 
                 for instance in instances.iter_mut() {
-                    instance.update(delta_t_ms);
+                    instance.update(delta_t_ms, &stage);
                 }
 
                 stage.draw(instances.iter());

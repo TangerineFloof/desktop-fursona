@@ -55,10 +55,16 @@ fn get_menu_bar_height() -> f64 {
 
 #[cfg(target_os = "macos")]
 impl Viewport {
-    pub fn top_left(&self) -> ViewportPoint {
-        ViewportPoint {
-            x: 0.0,
-            y: get_menu_bar_height() as f32,
-        }
+    pub fn left(&self) -> f32 {
+        0.0
+    }
+
+    pub fn right(&self) -> f32 {
+        let scale_factor = self.window.scale_factor();
+        self.window.inner_size().to_logical(scale_factor).width
+    }
+
+    pub fn top(&self) -> f32 {
+        get_menu_bar_height() as f32
     }
 }

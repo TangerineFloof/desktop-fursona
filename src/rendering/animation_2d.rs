@@ -34,21 +34,6 @@ impl Animation2D {
         }
     }
 
-    pub fn image_intrinsic_dimensions(&self) -> (f32, f32) {
-        let index = match self.state {
-            AnimationState::NotStarted => 0,
-            AnimationState::Active(current) => current.index,
-            AnimationState::Finished => self.keyframes.len() - 1,
-        };
-
-        if let Some(keyframe) = self.keyframes.get(index) {
-            let (width, height) = keyframe.image.dimensions();
-            return (width as f32, height as f32);
-        }
-
-        (0.0, 0.0)
-    }
-
     fn get_fresh_frame(&self, index: usize) -> Option<CurrentFrame> {
         if let Some(keyframe) = self.keyframes.get(index) {
             Some(CurrentFrame {
@@ -130,6 +115,21 @@ impl Animation for Animation2D {
             AnimationState::Finished => true,
             _ => false,
         }
+    }
+
+    fn intrinsic_dimensions(&self) -> (f32, f32) {
+        let index = match self.state {
+            AnimationState::NotStarted => 0,
+            AnimationState::Active(current) => current.index,
+            AnimationState::Finished => self.keyframes.len() - 1,
+        };
+
+        if let Some(keyframe) = self.keyframes.get(index) {
+            let (width, height) = keyframe.image.dimensions();
+            return (width as f32, height as f32);
+        }
+
+        (0.0, 0.0)
     }
 
     fn reset(&mut self) {
