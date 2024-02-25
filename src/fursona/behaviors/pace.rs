@@ -1,8 +1,8 @@
-use super::{AnimationDictionary, Behavior, BehaviorContext, BehaviorPreview, BehaviorResult};
-use crate::{
-    rendering::{Animation, Renderer},
-    stage::ViewportRect,
+use super::{
+    super::{animation::Animation, rendering::FursonaRenderer},
+    AnimationDictionary, Behavior, BehaviorContext, BehaviorPreview, BehaviorResult,
 };
+use crate::stage::ViewportRect;
 
 const SPEED_PIXELS_PER_SECOND: u32 = 240;
 const MILLISECONDS_PER_PIXEL: f32 = (SPEED_PIXELS_PER_SECOND as f32) / 1000.0;
@@ -13,19 +13,19 @@ enum PaceDirection {
     Right,
 }
 
-pub struct PaceBehavior<T: Renderer> {
+pub struct PaceBehavior<T: FursonaRenderer> {
     direction: PaceDirection,
     walk_left: Box<dyn Animation<ValidRenderer = T>>,
     walk_right: Box<dyn Animation<ValidRenderer = T>>,
 }
 
-impl<T: Renderer> BehaviorPreview<T> for PaceBehavior<T> {
+impl<T: FursonaRenderer> BehaviorPreview<T> for PaceBehavior<T> {
     fn is_possible(anims: &AnimationDictionary<T>) -> bool {
         anims.walk_left.is_some() && anims.walk_right.is_some()
     }
 }
 
-impl<T: Renderer> Behavior<T> for PaceBehavior<T> {
+impl<T: FursonaRenderer> Behavior<T> for PaceBehavior<T> {
     fn new(anims: &mut AnimationDictionary<T>) -> Option<Self>
     where
         Self: Sized,

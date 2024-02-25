@@ -1,4 +1,7 @@
+pub mod animation;
+pub mod behaviors;
 mod fursona_instance;
+pub mod rendering;
 
 use crate::stage::Stage;
 

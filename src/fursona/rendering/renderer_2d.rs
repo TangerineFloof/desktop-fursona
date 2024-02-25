@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use crate::stage::Stage;
 
-use super::{Renderer, RendererRect};
+use super::{FursonaRenderer, RendererRect};
 use glium::index::{NoIndices, PrimitiveType};
 use glium::texture::CompressedTexture2d;
 use glium::{implement_vertex, uniform, Frame, Program, Surface, VertexBuffer};
@@ -15,7 +15,7 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, tex_coords);
 
-pub struct Renderer2D {
+pub struct FursonaRenderer2D {
     index_buffer: NoIndices,
     program: Program,
     texture: Option<Rc<CompressedTexture2d>>,
@@ -45,7 +45,7 @@ void main() {
 }
 "#;
 
-impl Renderer2D {
+impl FursonaRenderer2D {
     pub fn new(stage: &Stage) -> Self {
         let left = 0.0f32;
         let top = 0.0f32;
@@ -112,7 +112,7 @@ impl Renderer2D {
     }
 }
 
-impl Renderer for Renderer2D {
+impl FursonaRenderer for FursonaRenderer2D {
     fn draw(&self, frame: &mut Frame, rect: RendererRect) -> () {
         let texture = self.texture.as_ref().unwrap();
 

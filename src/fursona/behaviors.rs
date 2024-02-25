@@ -1,15 +1,13 @@
 pub mod pace;
 
-use crate::{
-    rendering::{AnimationConstructor, Renderer},
-    stage::{Stage, ViewportPoint, ViewportRect},
-};
+use super::{animation::AnimationConstructor, rendering::FursonaRenderer};
+use crate::stage::{Stage, ViewportPoint, ViewportRect};
 
 type AnimDictionaryEntry<T> = Box<AnimationConstructor<T>>;
 
 pub struct AnimationDictionary<T>
 where
-    T: Renderer,
+    T: FursonaRenderer,
 {
     pub walk_right: Option<AnimDictionaryEntry<T>>,
     pub walk_left: Option<AnimDictionaryEntry<T>>,
@@ -24,7 +22,7 @@ pub struct BehaviorResult {
     pub bounding_box: ViewportRect,
 }
 
-pub trait Behavior<T: Renderer> {
+pub trait Behavior<T: FursonaRenderer> {
     fn new(anims: &mut AnimationDictionary<T>) -> Option<Self>
     where
         Self: Sized;
@@ -37,7 +35,7 @@ pub trait Behavior<T: Renderer> {
     ) -> BehaviorResult;
 }
 
-pub trait BehaviorPreview<T: Renderer> {
+pub trait BehaviorPreview<T: FursonaRenderer> {
     // Given a set of the animations available, determines whether this
     // behavior is possible to run or not.
     // This isn't REQUIRED to run, but this will be a predictor of whether

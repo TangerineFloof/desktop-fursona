@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use glium::texture::CompressedTexture2d;
 
-use super::{Animation, Renderer2D};
+use super::{super::rendering::renderer_2d::FursonaRenderer2D, Animation};
 
 pub struct Keyframe2D {
     pub duration_ms: u32,
@@ -47,7 +47,7 @@ impl Animation2D {
 }
 
 impl Animation for Animation2D {
-    type ValidRenderer = Renderer2D;
+    type ValidRenderer = FursonaRenderer2D;
 
     fn advance(&mut self, delta_t_ms: u32, renderer: &mut Self::ValidRenderer) -> () {
         let (current_frame, delta_t_ms) = match self.state {

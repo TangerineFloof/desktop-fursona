@@ -1,14 +1,18 @@
-use super::Fursona;
-use crate::{
+use super::{
+    animation::animation_2d::{Animation2D, Keyframe2D},
     behaviors::{pace::PaceBehavior, AnimationDictionary, Behavior, BehaviorContext},
-    rendering::{Animation2D, Keyframe2D, Renderer, Renderer2D, TextureCache},
+    rendering::{renderer_2d::FursonaRenderer2D, FursonaRenderer},
+    Fursona,
+};
+use crate::{
+    rendering::TextureCache,
     stage::{Stage, ViewportPoint, ViewportRect},
 };
 
 enum FursonaInstanceRendering {
     TwoD {
-        behavior: Box<dyn Behavior<Renderer2D>>,
-        renderer: Renderer2D,
+        behavior: Box<dyn Behavior<FursonaRenderer2D>>,
+        renderer: FursonaRenderer2D,
     },
 }
 
@@ -49,7 +53,7 @@ impl FursonaInstance {
             height: 0.0, // TODO
             rendering: FursonaInstanceRendering::TwoD {
                 behavior: Box::new(PaceBehavior::new(&mut anim_dictionary).unwrap()),
-                renderer: Renderer2D::new(&stage),
+                renderer: FursonaRenderer2D::new(&stage),
             },
         }
     }
@@ -63,7 +67,7 @@ impl FursonaInstance {
         }
     }
 
-    pub fn renderer(&self) -> &dyn Renderer {
+    pub fn renderer(&self) -> &dyn FursonaRenderer {
         match &self.rendering {
             FursonaInstanceRendering::TwoD { renderer, .. } => renderer,
         }

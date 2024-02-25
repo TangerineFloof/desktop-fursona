@@ -1,4 +1,3 @@
-mod behaviors;
 mod fursona;
 mod rendering;
 mod settings;
