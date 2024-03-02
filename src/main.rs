@@ -27,6 +27,7 @@ fn main() -> Result<(), impl std::error::Error> {
     let settings = RefCell::new(Settings::load_or_create("./settings.json"));
 
     let mut stage = Stage::new(&event_loop).unwrap();
+    stage.set_debug_mode(true);
 
     let mut instances: Vec<FursonaInstance> = Vec::new();
 

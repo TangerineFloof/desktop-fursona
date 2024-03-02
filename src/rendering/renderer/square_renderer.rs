@@ -1,24 +1,20 @@
-use std::ops::Deref;
-use std::rc::Rc;
-
-use crate::stage::Stage;
-
-use super::{FursonaRenderer, RendererRect};
+use crate::rendering::{Color, RendererRect};
 use glium::index::{NoIndices, PrimitiveType};
-use glium::texture::CompressedTexture2d;
-use glium::{implement_vertex, uniform, DrawParameters, Frame, Program, Surface, VertexBuffer};
+use glium::{
+    implement_vertex, uniform, Display, DrawParameters, Frame, Program, Surface, VertexBuffer,
+};
+use glutin::surface::WindowSurface;
 
 #[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
-    tex_coords: [f32; 2],
+    internal_pos: [f32; 2],
 }
-implement_vertex!(Vertex, position, tex_coords);
+implement_vertex!(Vertex, position, internal_pos);
 
-pub struct FursonaRenderer2D {
+pub struct SquareRenderer {
     index_buffer: NoIndices,
     program: Program,
-    texture: Option<Rc<CompressedTexture2d>>,
     vertex_buffer: VertexBuffer<Vertex>,
 }
 
@@ -26,64 +22,74 @@ const VERTEX_SHADER_SOURCE: &str = r#"
 #version 100
 uniform lowp mat4 matrix;
 attribute lowp vec2 position;
-attribute lowp vec2 tex_coords;
-varying lowp vec2 v_tex_coords;
+attribute lowp vec2 internal_pos;
+varying lowp vec2 v_internal_pos;
 
 void main() {
     gl_Position = matrix * vec4(position, 0.0, 1.0);
-    v_tex_coords = tex_coords;
+    v_internal_pos = internal_pos;
 }
 "#;
 
 const FRAGMENT_SHADER_SOURCE: &str = r#"
 #version 100
-uniform lowp sampler2D tex;
-varying lowp vec2 v_tex_coords;
+uniform lowp vec4 color;
+uniform lowp vec2 thickness;
+varying lowp vec2 v_internal_pos;
 
 void main() {
-    gl_FragColor = texture2D(tex, v_tex_coords);
+    if (
+        v_internal_pos.x <= thickness.x ||
+        v_internal_pos.x >= 1.0 - thickness.x ||
+        v_internal_pos.y <= thickness.y ||
+        v_internal_pos.y >= 1.0 - thickness.y
+    ) {
+        gl_FragColor = color;
+    } else {
+        discard;
+    }
 }
 "#;
 
-impl FursonaRenderer2D {
-    pub fn new(stage: &Stage) -> Self {
+impl SquareRenderer {
+    pub fn new(display: &Display<WindowSurface>) -> Self {
         let left = 0.0f32;
         let top = 0.0f32;
         let right = 1.0f32;
         let bottom = -1.0f32;
 
         let vertex_buffer = VertexBuffer::new(
-            &stage.display,
+            display,
             &[
                 Vertex {
                     // BL
                     position: [left, bottom],
-                    tex_coords: [0.0, 0.0],
+                    internal_pos: [0.0, 0.0],
                 },
                 Vertex {
                     // BR
                     position: [right, bottom],
-                    tex_coords: [1.0, 0.0],
+                    internal_pos: [1.0, 0.0],
                 },
                 Vertex {
                     // TR
                     position: [right, top],
-                    tex_coords: [1.0, 1.0],
+                    internal_pos: [1.0, 1.0],
                 },
                 Vertex {
                     // TR
                     position: [right, top],
-                    tex_coords: [1.0, 1.0],
+                    internal_pos: [1.0, 1.0],
                 },
                 Vertex {
                     // TL
                     position: [left, top],
-                    tex_coords: [0.0, 1.0],
+                    internal_pos: [0.0, 1.0],
                 },
                 Vertex {
                     // BL
                     position: [left, bottom],
-                    tex_coords: [0.0, 0.0],
+                    internal_pos: [0.0, 0.0],
                 },
             ],
         )
@@ -91,41 +97,34 @@ impl FursonaRenderer2D {
 
         let index_buffer = NoIndices(PrimitiveType::TrianglesList);
 
-        let program = Program::from_source(
-            &stage.display,
-            VERTEX_SHADER_SOURCE,
-            FRAGMENT_SHADER_SOURCE,
-            None,
-        )
-        .unwrap();
+        let program =
+            Program::from_source(display, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE, None)
+                .unwrap();
 
         Self {
             vertex_buffer,
             index_buffer,
             program,
-            texture: None,
         }
     }
 
-    pub fn set_texture(&mut self, texture: Rc<CompressedTexture2d>) {
-        self.texture = Some(texture);
-    }
-}
-
-impl FursonaRenderer for FursonaRenderer2D {
-    fn draw(
+    pub fn draw(
         &self,
         frame: &mut Frame,
-        rect: RendererRect,
+        square: RendererRect,
+        color: &Color,
+        // Thickness measure from 0.0 to 1.0 and is a percentage of the
+        // provided square in each dimension. A thickness of (0.2, 0.2)
+        // means the square will be 20% of the provided square on each
+        // side
+        thickness: (f32, f32),
         base_draw_parameters: &DrawParameters,
     ) -> () {
-        let texture = self.texture.as_ref().unwrap();
-
         // Multiply size by 2.0 because the vertices are sized to take up
         // one quadrant of the renderer system, but the incoming rect size
         // goes from 0.0 -> 1.0 for the whole coordinate system.
-        let scale_x = rect.width * 2.0;
-        let scale_y = rect.height * 2.0;
+        let scale_x = square.width * 2.0;
+        let scale_y = square.height * 2.0;
 
         frame
             .draw(
@@ -134,12 +133,13 @@ impl FursonaRenderer for FursonaRenderer2D {
                 &self.program,
                 &uniform! {
                     matrix: [
-                        [ scale_x,     0.0, 0.0, 0.0],
-                        [     0.0, scale_y, 0.0, 0.0],
-                        [     0.0,     0.0, 1.0, 0.0],
-                        [  rect.x,  rect.y, 0.0, 1.0f32],
+                        [   scale_x,       0.0, 0.0, 0.0],
+                        [       0.0,   scale_y, 0.0, 0.0],
+                        [       0.0,       0.0, 1.0, 0.0],
+                        [  square.x,  square.y, 0.0, 1.0f32],
                     ],
-                    tex: texture.deref(),
+                    color: [color.0, color.1, color.2, color.3],
+                    thickness: [thickness.0, thickness.1]
                 },
                 base_draw_parameters,
             )

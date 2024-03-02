@@ -2,12 +2,12 @@ mod viewport;
 mod viewport_point;
 mod viewport_rect;
 
-use glium::Display;
+use glium::{Blend, Display, DrawParameters, Surface};
 use glutin::config::{Config, ConfigTemplateBuilder};
 use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
 
 use crate::fursona::FursonaInstance;
-use crate::rendering::RendererCoord;
+use crate::rendering::{Color, Renderer, RendererCoord};
 use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::WindowSurface;
@@ -23,10 +23,18 @@ pub use viewport::Viewport;
 pub use viewport_point::ViewportPoint;
 pub use viewport_rect::ViewportRect;
 
+const DEBUG_COLORS: [Color; 3] = [
+    Color(1.0, 0.0, 0.0, 1.0),
+    Color(0.0, 1.0, 0.0, 1.0),
+    Color(0.0, 0.0, 1.0, 1.0),
+];
+
 pub struct Stage {
     pub display: Display<WindowSurface>,
     pub viewport: Viewport,
+    renderer: Renderer,
     window: Rc<Window>,
+    debug_mode: bool,
 }
 
 struct Point(f32, f32);
@@ -177,12 +185,19 @@ impl Stage {
         .unwrap();
 
         let window = Rc::new(window);
+        let renderer = Renderer::new(&display);
 
         Ok(Self {
             display,
+            renderer,
             viewport: Viewport::new(window.clone()),
             window,
+            debug_mode: false,
         })
+    }
+
+    pub fn set_debug_mode(&mut self, enabled: bool) {
+        self.debug_mode = enabled;
     }
 
     pub fn on_mouse_over(&self, point: ViewportPoint) {
@@ -207,11 +222,40 @@ impl Stage {
 
     pub fn draw<'a, I: Iterator<Item = &'a FursonaInstance>>(&mut self, instances: I) {
         let mut frame = self.display.draw();
-        for instance in instances {
-            instance.renderer().draw(
-                &mut frame,
-                self.viewport.convert_rect(instance.bounding_box()),
-            );
+        frame.clear_all((0.0, 0.0, 0.0, 0.0), 0.0, 0);
+
+        let draw_parameters = DrawParameters {
+            blend: Blend::alpha_blending(),
+            ..Default::default()
+        };
+
+        for (index, instance) in instances.enumerate() {
+            let rect = self.viewport.convert_rect(instance.bounding_box());
+
+            let debug_color = &DEBUG_COLORS[index % DEBUG_COLORS.len()];
+
+            if self.debug_mode {
+                self.renderer.fill_rect(
+                    &mut frame,
+                    rect.clone(),
+                    debug_color.alpha(0.3),
+                    &draw_parameters,
+                );
+            }
+
+            instance
+                .renderer()
+                .draw(&mut frame, rect.clone(), &draw_parameters);
+
+            if self.debug_mode {
+                self.renderer.outline_rect(
+                    &mut frame,
+                    rect.clone(),
+                    debug_color.alpha(0.8),
+                    4.0,
+                    &draw_parameters,
+                );
+            }
         }
 
         self.window.request_redraw();

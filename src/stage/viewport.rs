@@ -37,6 +37,8 @@ impl Viewport {
             y: (half_height - rect.y as f32) / half_height,
             width: (rect.width as f32) / size.width,
             height: (rect.height as f32) / size.height,
+            pixel_width: rect.width as f32,
+            pixel_height: rect.height as f32,
         }
     }
 }
