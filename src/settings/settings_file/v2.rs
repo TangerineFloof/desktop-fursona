@@ -13,7 +13,9 @@ pub struct V2SettingsFile {
 impl V2SettingsFile {
     pub fn new() -> Self {
         Self {
-            fursona: Vec::new(),
+            fursona: vec![V2SettingsFileFursona {
+                name: "Jack".to_owned(),
+            }],
         }
     }
 }

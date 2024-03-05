@@ -4,6 +4,7 @@ mod settings;
 mod stage;
 mod time;
 
+use colored::Colorize;
 use std::cell::RefCell;
 
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
@@ -19,6 +20,14 @@ fn main() -> Result<(), impl std::error::Error> {
     event_loop.set_control_flow(ControlFlow::Poll);
 
     let settings = Settings::load_or_create("./settings.json");
+    if settings.fursona.is_empty() {
+        println!(
+            "{}",
+            "You have no fursona configured in your settings.".red()
+        );
+        std::process::exit(-1);
+    }
+
     println!("Defined fursona:");
     for fursona in settings.fursona {
         println!("  - {}", fursona.name)
