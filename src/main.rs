@@ -6,6 +6,9 @@ mod time;
 
 use colored::Colorize;
 use std::cell::RefCell;
+use winit::error::EventLoopError;
+#[cfg(target_os = "macos")]
+use winit::platform::macos::{ActivationPolicy, EventLoopBuilderExtMacOS};
 
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 use fursona::FursonaInstance;
@@ -13,11 +16,23 @@ use settings::Settings;
 use stage::{Stage, ViewportPoint};
 use time::Time;
 use winit::event::{Event, StartCause, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
+
+fn create_event_loop() -> Result<EventLoop<()>, EventLoopError> {
+    let mut builder = EventLoopBuilder::new();
+
+    #[cfg(target_os = "macos")]
+    builder.with_activation_policy(ActivationPolicy::Accessory);
+
+    let event_loop = builder.build()?;
+
+    event_loop.set_control_flow(ControlFlow::Poll);
+
+    Ok(event_loop)
+}
 
 fn main() -> Result<(), impl std::error::Error> {
-    let event_loop = EventLoop::new().unwrap();
-    event_loop.set_control_flow(ControlFlow::Poll);
+    let event_loop = create_event_loop().unwrap();
 
     let settings = Settings::load_or_create("./settings.json");
     if settings.fursona.is_empty() {
