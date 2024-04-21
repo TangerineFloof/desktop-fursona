@@ -6,6 +6,7 @@ use glium::{Blend, Display, DrawParameters, Surface};
 use glutin::config::{Config, ConfigTemplateBuilder};
 use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
 
+use crate::event_loop::EventLoop;
 use crate::fursona::FursonaInstance;
 use crate::rendering::{Color, Renderer, RendererCoord};
 use glutin::display::GetGlDisplay;
@@ -14,7 +15,6 @@ use glutin::surface::WindowSurface;
 use glutin_winit::{DisplayBuilder, GlWindow};
 use raw_window_handle::HasRawWindowHandle;
 use std::rc::Rc;
-use winit::event_loop::EventLoop;
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
 use winit::window::{CursorIcon, Window, WindowBuilder, WindowLevel};
@@ -76,7 +76,7 @@ fn is_point_in_triangle(point: Point, triangle: (Point, Point, Point)) -> bool {
     ((side_1 < 0.0) == (side_2 < 0.0)) == (side_3 < 0.0)
 }
 
-fn init_opengl(event_loop: &EventLoop<()>, window_builder: WindowBuilder) -> (Window, Config) {
+fn init_opengl(event_loop: &EventLoop, window_builder: WindowBuilder) -> (Window, Config) {
     // The template will match only the configurations supporting rendering
     // to windows.
     //
@@ -92,7 +92,7 @@ fn init_opengl(event_loop: &EventLoop<()>, window_builder: WindowBuilder) -> (Wi
     let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
 
     let (window, gl_config) = display_builder
-        .build(event_loop, template, |configs| {
+        .build(event_loop.get_winit(), template, |configs| {
             // Find the config with the maximum number of samples, so our triangle will
             // be smooth.
             configs
@@ -122,7 +122,7 @@ fn init_opengl(event_loop: &EventLoop<()>, window_builder: WindowBuilder) -> (Wi
 }
 
 impl Stage {
-    pub fn new(event_loop: &EventLoop<()>) -> Result<Stage, &'static str> {
+    pub fn new(event_loop: &EventLoop) -> Result<Stage, &'static str> {
         let window_builder = WindowBuilder::new()
             .with_transparent(true)
             .with_decorations(false)
