@@ -3,6 +3,7 @@ mod fursona;
 mod rendering;
 mod settings;
 mod stage;
+mod system_tray;
 
 use colored::Colorize;
 use std::cell::RefCell;
@@ -12,8 +13,12 @@ use fursona::FursonaInstance;
 use settings::Settings;
 use stage::Stage;
 
+use crate::system_tray::SystemTray;
+
 fn main() -> Result<(), impl std::error::Error> {
-    let event_loop = EventLoop::new().unwrap();
+    // crate::system_tray::tray_main();
+
+    let event_loop = EventLoop::new(SystemTray::new()).unwrap();
 
     let settings = Settings::load_or_create("./settings.json");
     if settings.fursona.is_empty() {

@@ -1,6 +1,7 @@
 mod time;
 
 use crate::stage::ViewportPoint;
+use crate::system_tray::{SystemTray, SystemTrayEvent};
 use device_query::{DeviceQuery, DeviceState, Keycode, MouseState};
 use time::Time;
 use winit::error::EventLoopError;
@@ -22,11 +23,12 @@ pub enum Event {
 }
 
 pub struct EventLoop {
+    system_tray: SystemTray,
     winit_event_loop: WinitEventLoop<()>,
 }
 
 impl EventLoop {
-    pub fn new() -> Result<Self, EventLoopError> {
+    pub fn new(system_tray: SystemTray) -> Result<Self, EventLoopError> {
         let mut builder = WinitEventLoopBuilder::new();
 
         #[cfg(target_os = "macos")]
@@ -36,7 +38,10 @@ impl EventLoop {
 
         winit_event_loop.set_control_flow(ControlFlow::Poll);
 
-        Ok(Self { winit_event_loop })
+        Ok(Self {
+            system_tray,
+            winit_event_loop,
+        })
     }
 
     pub fn get_winit(&self) -> &WinitEventLoopWindowTarget<()> {
@@ -64,6 +69,10 @@ impl EventLoop {
 
             elwt.exit();
         };
+
+        self.system_tray.on(|event| match event {
+            SystemTrayEvent::Quit => do_exit(&mut event_handler, &self.winit_event_loop),
+        });
 
         self.winit_event_loop.run(move |event, elwt| match event {
             WinitEvent::NewEvents(StartCause::Poll) => {
