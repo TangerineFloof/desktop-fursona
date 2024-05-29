@@ -61,6 +61,15 @@ fn main() -> Result<(), impl std::error::Error> {
 
     let mut time = Time::new();
 
+    // WORTH FOLLOWUP: When we draw RIGHT AWAY on startup, we leave a shadow of what we
+    // rendered that can't be cleared by any means. This seems to go away after a few
+    // frames from startup. The best approximation I found for full consistency is that
+    // we need to wait until we've both received both the focus and unoccluded events.
+    // Discovering this was trial and error; it could be unrelated correlation.
+    // I DO NOT KNOW WHY, and I would like to [TODO DF-41]
+    let mut has_unoccluded_once = false;
+    let mut has_focused_once = false;
+
     event_loop.run(move |event, elwt| match event {
         Event::NewEvents(StartCause::Poll) => {
             if device_state.get_keys().contains(&Keycode::Escape) {
@@ -100,15 +109,36 @@ fn main() -> Result<(), impl std::error::Error> {
             WindowEvent::RedrawRequested => {
                 let delta_t_ms = time.delta_ms();
 
+                if !has_unoccluded_once || !has_focused_once {
+                    stage.foo();
+                    return;
+                }
+
                 for instance in instances.iter_mut() {
                     instance.update(delta_t_ms, &stage);
                 }
 
                 stage.draw(instances.iter());
             }
+            WindowEvent::Occluded(occluded) => {
+                println!("event: {:?}", event);
+                if !occluded {
+                    has_unoccluded_once = true;
+                }
+            }
+            WindowEvent::Focused(focused) => {
+                println!("event: {:?}", event);
+                if focused {
+                    has_focused_once = true;
+                }
+            }
             WindowEvent::CloseRequested => elwt.exit(),
-            _ => (),
+            _ => {
+                println!("event: {:?}", event);
+            }
         },
-        _ => (),
+        _ => {
+            println!("main event: {:?}", event);
+        }
     })
 }

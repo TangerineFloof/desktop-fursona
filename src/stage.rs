@@ -35,6 +35,7 @@ pub struct Stage {
     renderer: Renderer,
     window: Rc<Window>,
     debug_mode: bool,
+    render_count: i32,
 }
 
 struct Point(f32, f32);
@@ -193,6 +194,7 @@ impl Stage {
             viewport: Viewport::new(window.clone()),
             window,
             debug_mode: false,
+            render_count: 0,
         })
     }
 
@@ -220,6 +222,14 @@ impl Stage {
         }
     }
 
+    pub fn is_ready(&self) -> bool {
+        false
+    }
+
+    pub fn foo(&self) -> () {
+        self.window.request_redraw();
+    }
+
     pub fn draw<'a, I: Iterator<Item = &'a FursonaInstance>>(&mut self, instances: I) {
         let mut frame = self.display.draw();
         frame.clear_all((0.0, 0.0, 0.0, 0.0), 0.0, 0);
@@ -229,8 +239,21 @@ impl Stage {
             ..Default::default()
         };
 
+        let count = self.render_count;
+        self.render_count += 1;
+
+        let degrees = (360.0f32 / 100.0f32) * (count as f32 % 50.0f32);
+        let radians = degrees.to_radians();
+        let scalar = 0.5f32 + 0.5f32 * radians.sin();
+        println!(
+            "render_count = {count}, degrees = {degrees}, radians = {radians}, scalar = {scalar}"
+        );
+
+        // if count > -1 {
+        //4 {
         for (index, instance) in instances.enumerate() {
-            let rect = self.viewport.convert_rect(instance.bounding_box());
+            let mut rect = self.viewport.convert_rect(instance.bounding_box());
+            rect.scale(scalar);
 
             let debug_color = &DEBUG_COLORS[index % DEBUG_COLORS.len()];
 
@@ -257,6 +280,7 @@ impl Stage {
                 );
             }
         }
+        // }
 
         self.window.request_redraw();
         frame.finish().unwrap();
